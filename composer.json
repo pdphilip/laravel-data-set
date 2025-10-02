@@ -1,0 +1,87 @@
+{
+  "name": "pdphilip/laravel-data-set",
+  "description": "Eloquent style management of data sets in Laravel",
+  "keywords": [
+    "PDPhilip",
+    "laravel",
+    "data-set"
+  ],
+  "homepage": "https://github.com/pdphilip/laravel-data-set",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "David Philip",
+      "email": "pd.philip@gmail.com",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": "^8.3",
+    "spatie/laravel-package-tools": "^1.16",
+    "illuminate/contracts": "^10.0||^11.0||^12.0"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.14",
+    "nunomaduro/collision": "^8.1.1||^7.10.0",
+    "larastan/larastan": "^3",
+    "orchestra/testbench": "^9.0.0||^8.22.0",
+    "pestphp/pest": "^4.0.3",
+    "pestphp/pest-plugin-arch": "^4",
+    "pestphp/pest-plugin-laravel": "^4",
+    "phpstan/extension-installer": "^1",
+    "phpstan/phpstan-deprecation-rules": "^2",
+    "phpstan/phpstan-phpunit": "^2"
+  },
+  "autoload": {
+    "psr-4": {
+      "PDPhilip\\DataSet\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "PDPhilip\\DataSet\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "post-autoload-dump": "@composer run prepare",
+    "clear": "@php vendor/bin/testbench package:purge-elasticlens --ansi",
+    "prepare": "@php vendor/bin/testbench package:discover --ansi",
+    "build": [
+      "@composer run prepare",
+      "@php vendor/bin/testbench workbench:build --ansi"
+    ],
+    "start": [
+      "Composer\\Config::disableProcessTimeout",
+      "@composer run build",
+      "@php vendor/bin/testbench serve"
+    ],
+    "types": "phpstan analyse --ansi --memory-limit=2G",
+    "lint": "pint -v",
+    "pest": "pest --colors=always",
+    "test-coverage": "pest --coverage",
+    "test:lint": "pint --test -v",
+    "test:types": "@types",
+    "test:unit": "pest --colors=always",
+    "test": [
+      "@test:lint",
+      "@test:types",
+      "@test:unit"
+    ]
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true,
+      "phpstan/extension-installer": true
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "PDPhilip\\DataSet\\DataSetServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
