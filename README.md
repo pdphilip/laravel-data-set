@@ -2,7 +2,10 @@
 
 # Laravel Data Set
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/pdphilip/laravel-data-set.svg?style=flat-square)](https://packagist.org/packages/pdphilip/laravel-data-set) [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/pdphilip/laravel-data-set/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/pdphilip/data-set/actions?query=workflow%3Arun-tests+branch%3Amain) [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/pdphilip/data-set/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/pdphilip/laravel-data-set/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain) [![Total Downloads](https://img.shields.io/packagist/dt/pdphilip/laravel-data-set.svg?style=flat-square)](https://packagist.org/packages/pdphilip/laravel-data-set)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/pdphilip/laravel-data-set.svg?style=flat-square)](https://packagist.org/packages/pdphilip/laravel-data-set)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/pdphilip/laravel-data-set/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/pdphilip/laravel-data-set/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/pdphilip/laravel-data-set/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/pdphilip/laravel-data-set/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](http://img.shields.io/packagist/dt/pdphilip/laravel-data-set.svg)](https://packagist.org/packages/pdphilip/laravel-data-set)
 
 Eloquent style management of data sets in Laravel
 
