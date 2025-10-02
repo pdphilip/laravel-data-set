@@ -13,13 +13,7 @@ Eloquent style management of data sets in Laravel
 Add the package via composer:
 
 ```bash
-composer require pdphilip/data-set
-```
-
-Then install with:
-
-```bash
-php artisan data-set:install
+composer require pdphilip/laravel-data-set
 ```
 
 ## Usage
