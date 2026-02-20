@@ -1,6 +1,6 @@
 <?php
 
-// Eleganced at 2026-02-20
+// Eleganced at 2026-02-20 18:00
 
 namespace PDPhilip\DataSet;
 
@@ -123,7 +123,7 @@ class DataSet
 
     public function save(DataModel $model): void
     {
-        $attrs = $model->toArray();
+        $attrs = $model->rawAttributes();
 
         if (empty($attrs[$this->primaryKey])) {
             $id = Str::uuid()->toString();
@@ -154,12 +154,10 @@ class DataSet
 
     protected function delete(): int
     {
-        $count = $this->query->count();
-        foreach ($this->query as $key => $row) {
-            $this->rows->forget($key);
-        }
+        $keys = $this->query->keys();
+        $keys->each(fn ($key) => $this->rows->forget($key));
 
-        return $count;
+        return $keys->count();
     }
 
     // ----------------------------------------------------------------------

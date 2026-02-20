@@ -71,6 +71,18 @@ it('preserves explicit IDs', function () {
     expect($set->find('custom-1')->name)->toBe('Alpha');
 });
 
+it('modifies and re-saves a found model with auto-ID', function () {
+    $set = new DataSet;
+    $set->insert([['name' => 'Alpha']]);
+
+    $model = $set->first();
+    $model->name = 'Updated';
+    $model->save();
+
+    expect($set->count())->toBe(1)
+        ->and($set->first()->name)->toBe('Updated');
+});
+
 it('deletes a model', function () {
     $set = new DataSet;
     $set->insert([

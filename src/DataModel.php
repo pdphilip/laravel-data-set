@@ -1,6 +1,6 @@
 <?php
 
-// Eleganced at 2026-02-20
+// Eleganced at 2026-02-20 18:00
 
 namespace PDPhilip\DataSet;
 
@@ -38,6 +38,12 @@ class DataModel extends Fluent
         }
 
         return $attrs;
+    }
+
+    /** @internal - Returns all attributes including auto-generated IDs */
+    public function rawAttributes(): array
+    {
+        return parent::toArray();
     }
 
     public function isSaved(): bool

@@ -149,6 +149,8 @@ $user->country()->dial_code;  // '+1'
 | `create(array $attributes)` | `DataModel` | Create an unsaved model instance |
 | `add(array $attributes)` | `DataModel` | Create and save a model |
 | `insert(array $rows)` | `static` | Bulk insert rows |
+| `$model->save()` | `static` | Save or update a model |
+| `$model->delete()` | `void` | Remove a model from the set |
 
 ```php
 // Create without saving
@@ -164,9 +166,19 @@ $set->insert([
     ['name' => 'Alpha', 'status' => 'active'],
     ['name' => 'Beta', 'status' => 'inactive'],
 ]);
+
+// Modify and re-save
+$model = $set->find('us');
+$model->name = 'Updated';
+$model->save();
+
+// Delete
+$model->delete();
 ```
 
-Records without an `id` get a UUID assigned automatically. To use a custom primary key:
+Records without an `id` get a UUID assigned automatically. Auto-generated IDs are hidden from `toArray()` output, so data round-trips cleanly (load from source, query, modify, export back). The ID is still accessible on the model for `find()`, `save()`, and `delete()` operations.
+
+To use a custom primary key:
 
 ```php
 class MySet extends DataSet
@@ -181,16 +193,20 @@ All query methods return a new instance, leaving the original untouched.
 
 | Method | Description |
 |--------|-------------|
-| `where(string $key, mixed $operator, mixed $value)` | Filter by field. Supports `=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`, `like` |
+| `where(string $key, mixed $operator, mixed $value)` | Filter by field. Supports `=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`, `like`, `===`, `!==` |
 | `where(string $key, mixed $value)` | Shorthand for `where($key, '=', $value)` |
+| `whereNot(string $key, mixed $value)` | Shorthand for `where($key, '!=', $value)` |
+| `whereStrict(string $key, mixed $value)` | Strict `===` comparison |
 | `whereIn(string $key, array $values)` | Filter where field value is in array |
 | `whereNotIn(string $key, array $values)` | Filter where field value is not in array |
 | `whereBetween(string $key, array $range)` | Filter where field is between `[$min, $max]` |
+| `whereNotBetween(string $key, array $range)` | Filter where field is outside `[$min, $max]` |
 | `whereNull(string $key)` | Filter where field is null or missing |
 | `whereNotNull(string $key)` | Filter where field is not null |
 | `search(string $term)` | Case-insensitive search across all string fields |
 | `orderBy(string $key, string $direction)` | Sort results (`asc` or `desc`) |
 | `orderByDesc(string $key)` | Sort descending |
+| `groupBy(string $key)` | Group results by field (applied on `get()`) |
 | `limit(int $count)` | Limit result count |
 | `offset(int $count)` | Skip first N results |
 
@@ -212,9 +228,13 @@ $set->insert([
 ]);
 $set->where('tags', 'php')->get(); // Row 1
 
+// Group by
+$set->groupBy('browser')->get();
+// => ['Chrome' => Collection, 'Firefox' => Collection, ...]
+
 // Clone isolation - queries never pollute the base set
 $active = $set->where('status', 'active');
-$activeHigh = $active->where('score', '>', 80');
+$activeHigh = $active->where('score', '>', 80);
 $activeLow = $active->where('score', '<', 30);
 // $active, $activeHigh, $activeLow are all independent
 ```
@@ -227,11 +247,32 @@ $activeLow = $active->where('score', '<', 30);
 | `all()` | `Collection` | All records (ignores filters) |
 | `first()` | `DataModel\|null` | First matching record |
 | `find(mixed $id)` | `DataModel\|null` | Find by primary key |
+| `fetch(string $key, mixed $value)` | `DataModel\|null` | Find first where key equals value |
+| `firstOrCreate(array $attributes, array $values)` | `DataModel` | Find matching or create with merged attributes |
 | `count()` | `int` | Count matching records |
 | `exists()` | `bool` | Any matches? |
 | `pluck(string $value, ?string $key)` | `Collection` | Pluck field values |
-| `toArray()` | `array` | Raw array output |
+| `toArray()` | `array` | Raw array output (auto-IDs stripped) |
 | `paginate(int $perPage)` | `LengthAwarePaginator` | Paginated results |
+| `update(array $attributes)` | `int` | Bulk update matching rows, returns count |
+| `delete()` | `int` | Bulk delete matching rows, returns count |
+
+```php
+// Fetch - shorthand for where()->first()
+$set->fetch('email', 'john@example.com');
+
+// First or create
+$set->firstOrCreate(
+    ['email' => 'john@example.com'],           // search by
+    ['name' => 'John', 'status' => 'active']   // merge if creating
+);
+
+// Bulk update
+$set->where('status', 'draft')->update(['status' => 'published']); // => 3
+
+// Bulk delete
+$set->where('status', 'inactive')->delete(); // => 2
+```
 
 ### Static Facade
 
