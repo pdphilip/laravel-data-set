@@ -1,37 +1,26 @@
 <?php
 
+// Eleganced at 2026-02-20
+
 namespace PDPhilip\DataSet;
 
 use Illuminate\Support\Fluent;
-use JsonSerializable;
 
-class DataModel extends Fluent implements JsonSerializable
+class DataModel extends Fluent
 {
-    private bool $saved = false;
+    /** @internal */
+    public ?DataSet $dataSet = null;
 
-    public function __construct(
-        private readonly DataSet $set,
-        array|Fluent $attributes = [],
-        bool $saved = false
-    ) {
-        parent::__construct($attributes);
-        $this->saved = $saved;
-    }
+    protected bool $saved = false;
 
-    /**
-     * @return static
-     */
-    public function save()
+    public function save(): static
     {
-        $this->set->upsert($this);
+        $this->dataSet?->save($this);
 
         return $this;
     }
 
-    /**
-     * @return bool
-     */
-    public function isSaved()
+    public function isSaved(): bool
     {
         return $this->saved;
     }

@@ -75,13 +75,7 @@
       "phpstan/extension-installer": true
     }
   },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "PDPhilip\\DataSet\\DataSetServiceProvider"
-      ]
-    }
-  },
+  "extra": {},
   "minimum-stability": "dev",
   "prefer-stable": true
 }

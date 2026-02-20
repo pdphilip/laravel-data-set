@@ -1,225 +1,441 @@
 <?php
 
+// Eleganced at 2026-02-20
+
 namespace PDPhilip\DataSet;
 
-use Exception;
-use Illuminate\Support\Arr;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Fluent;
 use Illuminate\Support\Str;
-use PDPhilip\DataSet\Support\Helpers;
 
 /**
- * @template TModel of DataModel
- *
- * @template-covariant  TModelCov of DataModel
- *
- * @template TId of string|int
- * @template TRows of Collection<TId, array<TModelCov>>
- * @template TCollection of Collection<int, array<TModelCov>>
- *
- * @mixin DataQuery
+ * @method static where(string $key, mixed $operator = null, mixed $value = null)
+ * @method static whereNot(string $key, mixed $value)
+ * @method static whereStrict(string $key, mixed $value)
+ * @method static whereIn(string $key, array $values)
+ * @method static whereNotIn(string $key, array $values)
+ * @method static whereBetween(string $key, array $range)
+ * @method static whereNotBetween(string $key, array $range)
+ * @method static whereNull(string $key)
+ * @method static whereNotNull(string $key)
+ * @method static search(string $term)
+ * @method static orderBy(string $key, string $direction = 'asc')
+ * @method static orderByDesc(string $key)
+ * @method static groupBy(string $key)
+ * @method static limit(int $count)
+ * @method static offset(int $count)
+ * @method Collection get()
+ * @method Collection all()
+ * @method DataModel|null first()
+ * @method DataModel|null find(mixed $id)
+ * @method DataModel|null fetch(string $key, mixed $value)
+ * @method DataModel firstOrCreate(array $attributes, array $values = [])
+ * @method int count()
+ * @method bool exists()
+ * @method Collection pluck(string $value, ?string $key = null)
+ * @method array toArray()
+ * @method LengthAwarePaginator paginate(int $perPage = 15)
+ * @method DataModel create(array $attributes = [])
+ * @method DataModel add(array $attributes = [])
+ * @method static insert(array $rows)
  */
 class DataSet
 {
-    /** @var class-string<TModel> */
-    protected $modelClass = DataModel::class;
+    protected string $modelClass = DataModel::class;
 
-    /** @var TRows */
-    protected $rows;
+    protected string $primaryKey = 'id';
 
-    /** @var TId */
-    public $primaryKey = 'id';
+    protected Collection $rows;
 
-    protected array $queryMethods = [
-        'where',
-        'whereStrict',
-        'whereIn',
-        'whereBetween',
-        'whereNull',
-        'whereNot',
-        'whereNotIn',
-        'whereNotNull',
-        'whereNotBetween',
-        'search',
-        'orderBy',
-        'orderByDesc',
-        'skip',
-        'limit',
-        'pluck',
-        'all',
-        'find',
-        'first',
-        'get',
-        'toArray',
-        'count',
-        'exists',
-        'fetch',
-        'paginate',
-    ];
+    protected Collection $query;
 
-    /**
-     * @param  array<int|string,array<string,mixed>>  $seed
-     */
-    public function __construct(array|Collection $seed = [])
+    protected ?string $groupBy = null;
+
+    /** @var array<string, static> */
+    protected static array $resolved = [];
+
+    // ----------------------------------------------------------------------
+    // Lifecycle
+    // ----------------------------------------------------------------------
+
+    public function __construct(array $seed = [])
     {
         $this->rows = new Collection;
-        $this->insert(Helpers::ensureIndexedArray($this->seeder()));
-        $this->insert(Helpers::ensureIndexedArray($seed));
+
+        $this->insertRows($this->data());
+        $this->insertRows($seed);
+
+        $this->query = $this->rows;
     }
 
-    /**
-     * @param  class-string<covariant DataModel>  $modelClass
-     * @return static
-     */
-    public function using($modelClass)
-    {
-        $this->modelClass = $modelClass;
-
-        return $this;
-    }
-
-    /**
-     * @param  array|Fluent  $attributes
-     * @return TModelCov
-     */
-    public function create($attributes = [])
-    {
-        $mcl = $this->modelClass;
-
-        return new $mcl($this, $attributes);
-    }
-
-    /**
-     * @param  array|Fluent  $attributes
-     * @return TModel
-     */
-    public function add($attributes = [])
-    {
-        return $this->create($attributes)->save();
-    }
-
-    /**
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  array  $defaults
-     * @return TModel
-     */
-    public function firstOrCreate($key, $value, $defaults = [])
-    {
-        if ($first = $this->fetch($key, $value)) {
-            return $first;
-        }
-        $item[$key] = $value;
-        if ($defaults) {
-            foreach ($defaults as $k => $v) {
-                $item[$k] = $v;
-            }
-        }
-
-        return $this->add($item);
-    }
-
-    // ----------------------------------------------------------------------
-    // Queries
-    // ----------------------------------------------------------------------
-
-    /**
-     * @return DataQuery
-     */
-    public function query()
-    {
-        return new DataQuery($this);
-    }
-
-    /**
-     * @param  array  $rows
-     * @return void
-     */
-    public function insert($rows)
-    {
-        if ($rows) {
-            foreach ($rows as $row) {
-                $this->add($row);
-            }
-        }
-
-    }
-
-    /** @return TCollection */
-    public function getRows()
-    {
-        return $this->rows->values()->map(fn ($r) => $r);
-    }
-
-    public function __call(string $name, array $arguments)
-    {
-        if (! in_array($name, $this->queryMethods)) {
-            throw new Exception('Unknown method: '.$name);
-        }
-
-        return $this->query()->{$name}(...$arguments);
-    }
-
-    /** @return array */
-    protected function seeder()
+    protected function data(): array
     {
         return [];
     }
 
     // ----------------------------------------------------------------------
-    // Internals
+    // Magic routing
     // ----------------------------------------------------------------------
 
-    /** @internal */
-    public function upsert(DataModel $model): void
+    public function __call(string $name, array $arguments): mixed
     {
-        $attrs = $model->toArray();
-        $idKey = $this->primaryKey;
-
-        if (! Arr::has($attrs, $idKey) || empty($attrs[$idKey])) {
-            $attrs[$idKey] = Str::uuid()->toString();
-            $model->set($idKey, $attrs[$idKey]);
+        if (method_exists($this, $name)) {
+            return $this->{$name}(...$arguments);
         }
 
-        $this->rows->put($attrs[$idKey], $attrs);
+        throw new \BadMethodCallException("Method {$name} does not exist on ".static::class);
+    }
+
+    public static function __callStatic(string $name, array $arguments): mixed
+    {
+        return static::resolve()->{$name}(...$arguments);
+    }
+
+    // ----------------------------------------------------------------------
+    // CRUD
+    // ----------------------------------------------------------------------
+
+    protected function create(array $attributes = []): DataModel
+    {
+        $model = new $this->modelClass($attributes);
+        $model->dataSet = $this;
+
+        return $model;
+    }
+
+    protected function add(array $attributes = []): DataModel
+    {
+        return $this->create($attributes)->save();
+    }
+
+    protected function insert(array $rows): static
+    {
+        $this->insertRows($rows);
+        $this->query = $this->rows;
+
+        return $this;
+    }
+
+    public function save(DataModel $model): void
+    {
+        $attrs = $model->toArray();
+
+        if (empty($attrs[$this->primaryKey])) {
+            $id = Str::uuid()->toString();
+            $model->{$this->primaryKey} = $id;
+            $attrs[$this->primaryKey] = $id;
+        }
+
+        $this->rows->put($attrs[$this->primaryKey], $attrs);
         $model->markSaved();
     }
 
-    /** @internal */
-    public function mapToModels(Collection $rows): Collection
+    // ----------------------------------------------------------------------
+    // Query — each returns a clone
+    // ----------------------------------------------------------------------
+
+    protected function where(string $key, mixed $operator = null, mixed $value = null): static
     {
-        return $rows->values()->map(fn (array $r) => new DataModel($this, $r, true));
+        if (func_num_args() === 2) {
+            $value = $operator;
+            $operator = '=';
+        }
+
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(
+            fn (array $row) => $this->compare(data_get($row, $key), $operator, $value)
+        );
+
+        return $clone;
     }
 
-    /** @internal */
-    protected function seederToArray($seeds): array
+    protected function whereNot(string $key, mixed $value): static
     {
-        if (! $seeds) {
-            return [];
-        }
-
-        if ($seeds instanceof Collection) {
-            return $seeds->toArray();
-        }
-
-        if (empty($seeds[0])) {
-            $seeds = [$seeds];
-        }
-
-        return $seeds;
+        return $this->where($key, '!=', $value);
     }
 
-    /**
-     * Facade generator
-     *
-     * @return mixed
-     */
-    public static function __callStatic(string $name, array $arguments)
+    protected function whereStrict(string $key, mixed $value): static
     {
-        // @phpstan-ignore-next-line
-        $instance = new static;
+        return $this->where($key, '===', $value);
+    }
 
-        return $instance->{$name}(...$arguments);
+    protected function whereIn(string $key, array $values): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(
+            fn (array $row) => in_array(data_get($row, $key), $values)
+        );
+
+        return $clone;
+    }
+
+    protected function whereNotIn(string $key, array $values): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(
+            fn (array $row) => ! in_array(data_get($row, $key), $values)
+        );
+
+        return $clone;
+    }
+
+    protected function whereBetween(string $key, array $range): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(function (array $row) use ($key, $range) {
+            $val = data_get($row, $key);
+
+            return $val >= $range[0] && $val <= $range[1];
+        });
+
+        return $clone;
+    }
+
+    protected function whereNotBetween(string $key, array $range): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(function (array $row) use ($key, $range) {
+            $val = data_get($row, $key);
+
+            return $val < $range[0] || $val > $range[1];
+        });
+
+        return $clone;
+    }
+
+    protected function whereNull(string $key): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(
+            fn (array $row) => data_get($row, $key) === null
+        );
+
+        return $clone;
+    }
+
+    protected function whereNotNull(string $key): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(
+            fn (array $row) => data_get($row, $key) !== null
+        );
+
+        return $clone;
+    }
+
+    protected function search(string $term): static
+    {
+        $term = strtolower($term);
+        $clone = clone $this;
+        $clone->query = $clone->query->filter(function (array $row) use ($term) {
+            foreach ($row as $value) {
+                if (is_string($value) && str_contains(strtolower($value), $term)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        return $clone;
+    }
+
+    protected function orderBy(string $key, string $direction = 'asc'): static
+    {
+        $clone = clone $this;
+        $clone->query = strtolower($direction) === 'desc'
+            ? $clone->query->sortByDesc($key)
+            : $clone->query->sortBy($key);
+
+        return $clone;
+    }
+
+    protected function orderByDesc(string $key): static
+    {
+        return $this->orderBy($key, 'desc');
+    }
+
+    protected function limit(int $count): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->take($count);
+
+        return $clone;
+    }
+
+    protected function offset(int $count): static
+    {
+        $clone = clone $this;
+        $clone->query = $clone->query->skip($count);
+
+        return $clone;
+    }
+
+    protected function groupBy(string $key): static
+    {
+        $clone = clone $this;
+        $clone->groupBy = $key;
+
+        return $clone;
+    }
+
+    // ----------------------------------------------------------------------
+    // Terminal — execute and return
+    // ----------------------------------------------------------------------
+
+    protected function get(): Collection
+    {
+        $results = $this->query->values()->map(fn (array $row) => $this->toModel($row));
+
+        if ($this->groupBy) {
+            return $results->groupBy($this->groupBy);
+        }
+
+        return $results;
+    }
+
+    protected function all(): Collection
+    {
+        return $this->rows->values()->map(fn (array $row) => $this->toModel($row));
+    }
+
+    protected function first(): ?DataModel
+    {
+        $row = $this->query->first();
+
+        return $row ? $this->toModel($row) : null;
+    }
+
+    protected function find(mixed $id): ?DataModel
+    {
+        $row = $this->rows->get($id);
+
+        return $row ? $this->toModel($row) : null;
+    }
+
+    protected function fetch(string $key, mixed $value): ?DataModel
+    {
+        return $this->where($key, $value)->first();
+    }
+
+    protected function firstOrCreate(array $attributes, array $values = []): DataModel
+    {
+        $query = $this;
+        foreach ($attributes as $key => $val) {
+            $query = $query->where($key, $val);
+        }
+
+        return $query->first() ?? $this->add(array_merge($attributes, $values));
+    }
+
+    protected function count(): int
+    {
+        return $this->query->count();
+    }
+
+    protected function exists(): bool
+    {
+        return $this->query->isNotEmpty();
+    }
+
+    protected function pluck(string $value, ?string $key = null): Collection
+    {
+        return $this->query->pluck($value, $key);
+    }
+
+    protected function toArray(): array
+    {
+        return $this->query->values()->all();
+    }
+
+    protected function paginate(int $perPage = 15): LengthAwarePaginator
+    {
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $total = $this->query->count();
+        $items = $this->query->values()->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return new LengthAwarePaginator(
+            $items->map(fn (array $row) => $this->toModel($row)),
+            $total,
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+        );
+    }
+
+    // ----------------------------------------------------------------------
+    // Static facade
+    // ----------------------------------------------------------------------
+
+    public static function resolve(): static
+    {
+        /** @phpstan-ignore-next-line */
+        return static::$resolved[static::class] ??= new static;
+    }
+
+    public static function flush(): void
+    {
+        unset(static::$resolved[static::class]);
+    }
+
+    // ----------------------------------------------------------------------
+    // Internal
+    // ----------------------------------------------------------------------
+
+    protected function toModel(array $row): DataModel
+    {
+        $model = new $this->modelClass($row);
+        $model->dataSet = $this;
+        $model->markSaved();
+
+        return $model;
+    }
+
+    protected function compare(mixed $actual, string $operator, mixed $expected): bool
+    {
+        if (is_array($actual)) {
+            return match ($operator) {
+                '=', '==' => in_array($expected, $actual),
+                '!=', '<>' => ! in_array($expected, $actual),
+                default => false,
+            };
+        }
+
+        return match ($operator) {
+            '=', '==' => $actual == $expected,
+            '===' => $actual === $expected,
+            '!=', '<>' => $actual != $expected,
+            '!==' => $actual !== $expected,
+            '<' => $actual < $expected,
+            '>' => $actual > $expected,
+            '<=' => $actual <= $expected,
+            '>=' => $actual >= $expected,
+            'like' => str_contains(strtolower((string) $actual), strtolower(str_replace('%', '', (string) $expected))),
+            default => false,
+        };
+    }
+
+    private function insertRows(array $rows): void
+    {
+        if (! $rows) {
+            return;
+        }
+
+        // Single associative array → wrap
+        if (! isset($rows[0]) && ! array_is_list($rows)) {
+            $rows = [$rows];
+        }
+
+        foreach ($rows as $row) {
+            $attrs = (array) $row;
+            $id = $attrs[$this->primaryKey] ?? Str::uuid()->toString();
+            $attrs[$this->primaryKey] = $id;
+            $this->rows->put($id, $attrs);
+        }
+    }
+
+    public function __clone()
+    {
+        $this->query = $this->query->collect();
     }
 }

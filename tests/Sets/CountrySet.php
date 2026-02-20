@@ -8,10 +8,9 @@ class CountrySet extends DataSet
 {
     use SeederCountries;
 
-    /** @var class-string<CountryDataModel> */
-    protected $modelClass = CountryDataModel::class;
+    protected string $modelClass = CountryDataModel::class;
 
-    public function seeder()
+    protected function data(): array
     {
         return $this->countries;
     }

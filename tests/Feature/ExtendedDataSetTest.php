@@ -5,101 +5,89 @@ use PDPhilip\DataSet\DataSet;
 use PDPhilip\DataSet\Tests\Sets\CountryDataModel;
 use PDPhilip\DataSet\Tests\Sets\CountrySet;
 
-it('should use an extended data set', function () {
+beforeEach(function () {
+    CountrySet::flush();
+});
 
+it('is a DataSet subclass', function () {
     $countries = new CountrySet;
 
     expect($countries)->toBeInstanceOf(DataSet::class)
         ->and($countries)->toBeInstanceOf(CountrySet::class);
-
 });
 
-it('should use an extended data set with extended data model', function () {
-
+it('uses a custom model class', function () {
     $countries = new CountrySet;
-    $model = $countries->create();
-    $model->name = 'test';
-    $model->save();
+    $model = $countries->first();
 
     expect($model)->toBeInstanceOf(CountryDataModel::class)
         ->and($model)->toBeInstanceOf(DataModel::class);
-
 });
 
-it('should seed data from class function', function () {
-
+it('seeds data from the data() method', function () {
     $countries = new CountrySet;
 
     expect($countries->count())->toBe(250);
-
 });
 
-it('should seed data from class function and class arguments', function () {
-
+it('merges seed data with constructor arguments', function () {
     $countries = new CountrySet([
-        [
-            'id' => 'MI',
-            'id3' => 'MOI',
-            'name' => 'Monkey Island',
-            'name_official' => 'United States of Monkey Island',
-            'name_native' => 'Monkey Island',
-            'dial_code' => '+555',
-            'flag' => 'https://flagcdn.com/256x192/us.png',
-            'currency_code' => 'MID',
-            'currency_symbol' => 'M$',
-            'region' => 'Americas',
-            'sub_region' => 'North America',
-        ],
-        [
-            'id' => 'GZ',
-            'id3' => 'GIZ',
-            'name' => 'Ginger Island',
-            'name_official' => 'United States of Ginger Island',
-            'name_native' => 'Ginger Island',
-            'dial_code' => '+555',
-            'flag' => 'https://flagcdn.com/256x192/us.png',
-            'currency_code' => 'USD',
-            'currency_symbol' => '$',
-            'region' => 'Americas',
-            'sub_region' => 'North America',
-        ],
+        ['id' => 'MI', 'name' => 'Monkey Island'],
+        ['id' => 'GZ', 'name' => 'Ginger Island'],
     ]);
 
     expect($countries->count())->toBe(252);
-
 });
 
-it('should seed data from class function and class arguments as associative array entry', function () {
-
-    $countries = new CountrySet([
-        'id' => 'MI',
-        'id3' => 'MOI',
-        'name' => 'Monkey Island',
-        'name_official' => 'United States of Monkey Island',
-        'name_native' => 'Monkey Island',
-        'dial_code' => '+555',
-        'flag' => 'https://flagcdn.com/256x192/us.png',
-        'currency_code' => 'MID',
-        'currency_symbol' => 'M$',
-        'region' => 'Americas',
-        'sub_region' => 'North America',
-    ]);
+it('merges a single associative array as one record', function () {
+    $countries = new CountrySet(['id' => 'MI', 'name' => 'Monkey Island']);
 
     expect($countries->count())->toBe(251);
-
 });
 
-it('should have facade access', function () {
+it('supports static facade access', function () {
     expect(CountrySet::count())->toBe(250);
 });
 
-it('should get first', function () {
-    $first = CountrySet::first();
+it('supports static facade queries', function () {
+    $eur = CountrySet::where('currency_code', 'EUR')->get();
 
-    expect($first->name)->toBe('Afghanistan');
+    expect($eur)->toHaveCount(35);
 });
 
-it('should find on where query', function () {
-    $usd = CountrySet::where('currency_code', 'EUR')->get();
-    expect(count($usd))->toBe(35);
+it('finds by country code', function () {
+    $us = CountrySet::find('US');
+
+    expect($us)->toBeInstanceOf(CountryDataModel::class)
+        ->and($us->name)->toBe('United States');
+});
+
+it('caches the static instance', function () {
+    $a = CountrySet::resolve();
+    $b = CountrySet::resolve();
+
+    expect($a)->toBe($b);
+});
+
+it('flushes the static cache', function () {
+    $a = CountrySet::resolve();
+    CountrySet::flush();
+    $b = CountrySet::resolve();
+
+    expect($a)->not->toBe($b);
+});
+
+it('searches countries by name', function () {
+    $results = CountrySet::search('united')->get();
+    $names = $results->pluck('name')->all();
+
+    expect($results->count())->toBeGreaterThan(0)
+        ->and($names)->toContain('United States')
+        ->and($names)->toContain('United Kingdom');
+});
+
+it('orders countries by name', function () {
+    $first = CountrySet::orderBy('name')->first();
+
+    expect($first->name)->toBe('Afghanistan');
 });
