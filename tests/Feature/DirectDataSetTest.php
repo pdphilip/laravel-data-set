@@ -71,6 +71,52 @@ it('preserves explicit IDs', function () {
     expect($set->find('custom-1')->name)->toBe('Alpha');
 });
 
+it('deletes a model', function () {
+    $set = new DataSet;
+    $set->insert([
+        ['id' => '1', 'name' => 'Alpha'],
+        ['id' => '2', 'name' => 'Beta'],
+    ]);
+
+    $model = $set->find('1');
+    $model->delete();
+
+    expect($set->count())->toBe(1)
+        ->and($set->find('1'))->toBeNull()
+        ->and($model->isSaved())->toBeFalse();
+});
+
+it('bulk deletes matching rows', function () {
+    $set = new DataSet;
+    $set->insert([
+        ['id' => '1', 'status' => 'active'],
+        ['id' => '2', 'status' => 'inactive'],
+        ['id' => '3', 'status' => 'active'],
+        ['id' => '4', 'status' => 'inactive'],
+    ]);
+
+    $deleted = $set->where('status', 'inactive')->delete();
+
+    expect($deleted)->toBe(2)
+        ->and($set->count())->toBe(2)
+        ->and($set->where('status', 'inactive')->exists())->toBeFalse();
+});
+
+it('bulk updates matching rows', function () {
+    $set = new DataSet;
+    $set->insert([
+        ['id' => '1', 'name' => 'Alpha', 'status' => 'draft'],
+        ['id' => '2', 'name' => 'Beta', 'status' => 'draft'],
+        ['id' => '3', 'name' => 'Charlie', 'status' => 'published'],
+    ]);
+
+    $updated = $set->where('status', 'draft')->update(['status' => 'published']);
+
+    expect($updated)->toBe(2)
+        ->and($set->where('status', 'published')->count())->toBe(3)
+        ->and($set->find('1')['status'])->toBe('published');
+});
+
 // ----------------------------------------------------------------------
 // Where
 // ----------------------------------------------------------------------
@@ -465,7 +511,47 @@ it('converts to array', function () {
 
     $arr = $set->toArray();
     expect($arr)->toBeArray()
-        ->and($arr[0]['name'])->toBe('Alpha');
+        ->and($arr[0]['name'])->toBe('Alpha')
+        ->and($arr[0]['id'])->toBe('1');
+});
+
+it('hides auto-generated IDs in toArray', function () {
+    $set = new DataSet;
+    $set->insert([
+        ['name' => 'Alpha'],
+        ['id' => 'custom', 'name' => 'Beta'],
+    ]);
+
+    $arr = $set->toArray();
+    expect($arr[0])->not->toHaveKey('id')
+        ->and($arr[0]['name'])->toBe('Alpha')
+        ->and($arr[1]['id'])->toBe('custom');
+});
+
+it('hides auto-generated IDs on model toArray', function () {
+    $set = new DataSet;
+    $set->add(['name' => 'Alpha']);
+    $set->add(['id' => 'custom', 'name' => 'Beta']);
+
+    $models = $set->get();
+    $alpha = $models->firstWhere('name', 'Alpha');
+    $beta = $models->firstWhere('name', 'Beta');
+
+    expect($alpha->id)->not->toBeNull()
+        ->and($alpha->toArray())->not->toHaveKey('id')
+        ->and($beta->toArray())->toHaveKey('id');
+});
+
+it('preserves auto-ID internally for find and delete', function () {
+    $set = new DataSet;
+    $model = $set->add(['name' => 'Alpha']);
+
+    $id = $model->id;
+    expect($id)->not->toBeNull()
+        ->and($set->find($id)->name)->toBe('Alpha');
+
+    $model->delete();
+    expect($set->count())->toBe(0);
 });
 
 it('paginates results', function () {

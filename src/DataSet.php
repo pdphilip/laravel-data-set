@@ -35,6 +35,8 @@ use Illuminate\Support\Str;
  * @method Collection pluck(string $value, ?string $key = null)
  * @method array toArray()
  * @method LengthAwarePaginator paginate(int $perPage = 15)
+ * @method int update(array $attributes)
+ * @method int delete()
  * @method DataModel create(array $attributes = [])
  * @method DataModel add(array $attributes = [])
  * @method static insert(array $rows)
@@ -50,6 +52,9 @@ class DataSet
     protected Collection $query;
 
     protected ?string $groupBy = null;
+
+    /** @var array<string, true> */
+    protected array $autoIds = [];
 
     /** @var array<string, static> */
     protected static array $resolved = [];
@@ -124,10 +129,37 @@ class DataSet
             $id = Str::uuid()->toString();
             $model->{$this->primaryKey} = $id;
             $attrs[$this->primaryKey] = $id;
+            $this->autoIds[$id] = true;
         }
 
         $this->rows->put($attrs[$this->primaryKey], $attrs);
         $model->markSaved();
+    }
+
+    public function deleteModel(DataModel $model): void
+    {
+        $this->rows->forget($model->{$this->primaryKey});
+    }
+
+    protected function update(array $attributes): int
+    {
+        $count = 0;
+        foreach ($this->query as $key => $row) {
+            $this->rows->put($key, array_merge($row, $attributes));
+            $count++;
+        }
+
+        return $count;
+    }
+
+    protected function delete(): int
+    {
+        $count = $this->query->count();
+        foreach ($this->query as $key => $row) {
+            $this->rows->forget($key);
+        }
+
+        return $count;
     }
 
     // ----------------------------------------------------------------------
@@ -345,7 +377,13 @@ class DataSet
 
     protected function toArray(): array
     {
-        return $this->query->values()->all();
+        return $this->query->values()->map(function (array $row) {
+            if (isset($this->autoIds[$row[$this->primaryKey]])) {
+                unset($row[$this->primaryKey]);
+            }
+
+            return $row;
+        })->all();
     }
 
     protected function paginate(int $perPage = 15): LengthAwarePaginator
@@ -386,6 +424,11 @@ class DataSet
     {
         $model = new $this->modelClass($row);
         $model->dataSet = $this;
+
+        if (isset($this->autoIds[$row[$this->primaryKey]])) {
+            $model->autoIdKey = $this->primaryKey;
+        }
+
         $model->markSaved();
 
         return $model;
@@ -427,10 +470,19 @@ class DataSet
         }
 
         foreach ($rows as $row) {
-            $attrs = (array) $row;
-            $id = $attrs[$this->primaryKey] ?? Str::uuid()->toString();
-            $attrs[$this->primaryKey] = $id;
-            $this->rows->put($id, $attrs);
+            if (! is_array($row)) {
+                throw new \RuntimeException('Each row must be an associative array, '.gettype($row).' given.');
+            }
+
+            $hasId = isset($row[$this->primaryKey]);
+            $id = $row[$this->primaryKey] ?? Str::uuid()->toString();
+            $row[$this->primaryKey] = $id;
+
+            if (! $hasId) {
+                $this->autoIds[$id] = true;
+            }
+
+            $this->rows->put($id, $row);
         }
     }
 
