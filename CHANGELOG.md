@@ -2,6 +2,45 @@
 
 All notable changes to `Laravel Data Set` will be documented in this file.
 
+## v1.1.0 - 2026-03-03
+
+### Query Builder extraction + scaffolding command
+
+#### Architecture
+
+- **DataSetQuery** - query/terminal/CRUD methods extracted into a dedicated public query builder class. DataSet delegates via `__call` / `__callStatic`, IDE resolves against `DataSetQuery` via `@mixin`. This replaces protected methods behind `__call` magic - IDEs now autocomplete everything correctly.
+- **DataSetServiceProvider** - new service provider (Spatie Package Tools) with auto-discovery.
+
+#### New: `data-set:make` command
+
+Scaffolds a DataSet + DataModel pair with a single command:
+
+```bash
+php artisan data-set:make Country
+```
+
+Generates:
+```
+app/DataSets/
+├── CountrySet.php
+├── Models/
+│   └── CountryDataModel.php
+└── Seeders/                    (optional)
+    └── SeederCountries.php
+```
+
+- Singularizes plural input (`Countries` → `Country`)
+- Converts to StudlyCase (`page-view` → `PageView`)
+- Interactive prompt to generate a seeder trait
+- `--force` flag to overwrite existing files
+- Styled output via OmniTerm
+
+#### Dependencies
+
+- Added `pdphilip/omniterm: ^2`
+
+**Full Changelog**: https://github.com/pdphilip/laravel-data-set/compare/v1.0.0...v1.1.0
+
 ## v1.0.0 - 2026-02-20
 
 ### Complete rebuild
