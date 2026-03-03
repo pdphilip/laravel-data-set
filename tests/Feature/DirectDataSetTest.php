@@ -566,6 +566,22 @@ it('preserves auto-ID internally for find and delete', function () {
     expect($set->count())->toBe(0);
 });
 
+it('tracks page view counts with firstOrCreate', function () {
+    $pageTags = new DataSet;
+
+    $paths = ['/creators', '/creators/feed', '/creators', '/contact'];
+    foreach ($paths as $path) {
+        $view = $pageTags->firstOrCreate(['path' => $path], ['count' => 0]);
+        $view->count++;
+        $view->save();
+    }
+
+    expect($pageTags->count())->toBe(3)
+        ->and($pageTags->fetch('path', '/creators')->count)->toBe(2)
+        ->and($pageTags->fetch('path', '/creators/feed')->count)->toBe(1)
+        ->and($pageTags->fetch('path', '/contact')->count)->toBe(1);
+});
+
 it('paginates results', function () {
     $set = new DataSet;
     for ($i = 1; $i <= 25; $i++) {
