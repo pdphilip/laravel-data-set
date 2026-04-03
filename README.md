@@ -40,7 +40,7 @@ CountrySet::where('dial_code', '+1')->first()->currency;   // 'USD'
 ## Requirements
 
 - PHP 8.2+
-- Laravel 10, 11, or 12
+- Laravel 10, 11, 12, 13
 
 ## Installation
 
@@ -144,13 +144,13 @@ $user->country()->dial_code;  // '+1'
 
 ### CRUD
 
-| Method | Returns | Description |
-|--------|---------|-------------|
+| Method                      | Returns     | Description                      |
+|-----------------------------|-------------|----------------------------------|
 | `create(array $attributes)` | `DataModel` | Create an unsaved model instance |
-| `add(array $attributes)` | `DataModel` | Create and save a model |
-| `insert(array $rows)` | `static` | Bulk insert rows |
-| `$model->save()` | `static` | Save or update a model |
-| `$model->delete()` | `void` | Remove a model from the set |
+| `add(array $attributes)`    | `DataModel` | Create and save a model          |
+| `insert(array $rows)`       | `static`    | Bulk insert rows                 |
+| `$model->save()`            | `static`    | Save or update a model           |
+| `$model->delete()`          | `void`      | Remove a model from the set      |
 
 ```php
 // Create without saving
@@ -176,7 +176,8 @@ $model->save();
 $model->delete();
 ```
 
-Records without an `id` get a UUID assigned automatically. Auto-generated IDs are hidden from `toArray()` output, so data round-trips cleanly (load from source, query, modify, export back). The ID is still accessible on the model for `find()`, `save()`, and `delete()` operations.
+Records without an `id` get a UUID assigned automatically. Auto-generated IDs are hidden from `toArray()` output, so data round-trips cleanly (load from source, query, modify, export back). The ID is still accessible on the model for
+`find()`, `save()`, and `delete()` operations.
 
 To use a custom primary key:
 
@@ -191,24 +192,24 @@ class MySet extends DataSet
 
 All query methods return a new instance, leaving the original untouched.
 
-| Method | Description |
-|--------|-------------|
+| Method                                              | Description                                                                           |
+|-----------------------------------------------------|---------------------------------------------------------------------------------------|
 | `where(string $key, mixed $operator, mixed $value)` | Filter by field. Supports `=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`, `like`, `===`, `!==` |
-| `where(string $key, mixed $value)` | Shorthand for `where($key, '=', $value)` |
-| `whereNot(string $key, mixed $value)` | Shorthand for `where($key, '!=', $value)` |
-| `whereStrict(string $key, mixed $value)` | Strict `===` comparison |
-| `whereIn(string $key, array $values)` | Filter where field value is in array |
-| `whereNotIn(string $key, array $values)` | Filter where field value is not in array |
-| `whereBetween(string $key, array $range)` | Filter where field is between `[$min, $max]` |
-| `whereNotBetween(string $key, array $range)` | Filter where field is outside `[$min, $max]` |
-| `whereNull(string $key)` | Filter where field is null or missing |
-| `whereNotNull(string $key)` | Filter where field is not null |
-| `search(string $term)` | Case-insensitive search across all string fields |
-| `orderBy(string $key, string $direction)` | Sort results (`asc` or `desc`) |
-| `orderByDesc(string $key)` | Sort descending |
-| `groupBy(string $key)` | Group results by field (applied on `get()`) |
-| `limit(int $count)` | Limit result count |
-| `offset(int $count)` | Skip first N results |
+| `where(string $key, mixed $value)`                  | Shorthand for `where($key, '=', $value)`                                              |
+| `whereNot(string $key, mixed $value)`               | Shorthand for `where($key, '!=', $value)`                                             |
+| `whereStrict(string $key, mixed $value)`            | Strict `===` comparison                                                               |
+| `whereIn(string $key, array $values)`               | Filter where field value is in array                                                  |
+| `whereNotIn(string $key, array $values)`            | Filter where field value is not in array                                              |
+| `whereBetween(string $key, array $range)`           | Filter where field is between `[$min, $max]`                                          |
+| `whereNotBetween(string $key, array $range)`        | Filter where field is outside `[$min, $max]`                                          |
+| `whereNull(string $key)`                            | Filter where field is null or missing                                                 |
+| `whereNotNull(string $key)`                         | Filter where field is not null                                                        |
+| `search(string $term)`                              | Case-insensitive search across all string fields                                      |
+| `orderBy(string $key, string $direction)`           | Sort results (`asc` or `desc`)                                                        |
+| `orderByDesc(string $key)`                          | Sort descending                                                                       |
+| `groupBy(string $key)`                              | Group results by field (applied on `get()`)                                           |
+| `limit(int $count)`                                 | Limit result count                                                                    |
+| `offset(int $count)`                                | Skip first N results                                                                  |
 
 ```php
 // Chaining
@@ -241,21 +242,21 @@ $activeLow = $active->where('score', '<', 30);
 
 ### Terminal Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `get()` | `Collection` | Execute query, return Collection of models |
-| `all()` | `Collection` | All records (ignores filters) |
-| `first()` | `DataModel\|null` | First matching record |
-| `find(mixed $id)` | `DataModel\|null` | Find by primary key |
-| `fetch(string $key, mixed $value)` | `DataModel\|null` | Find first where key equals value |
-| `firstOrCreate(array $attributes, array $values)` | `DataModel` | Find matching or create with merged attributes |
-| `count()` | `int` | Count matching records |
-| `exists()` | `bool` | Any matches? |
-| `pluck(string $value, ?string $key)` | `Collection` | Pluck field values |
-| `toArray()` | `array` | Raw array output (auto-IDs stripped) |
-| `paginate(int $perPage)` | `LengthAwarePaginator` | Paginated results |
-| `update(array $attributes)` | `int` | Bulk update matching rows, returns count |
-| `delete()` | `int` | Bulk delete matching rows, returns count |
+| Method                                            | Returns                | Description                                    |
+|---------------------------------------------------|------------------------|------------------------------------------------|
+| `get()`                                           | `Collection`           | Execute query, return Collection of models     |
+| `all()`                                           | `Collection`           | All records (ignores filters)                  |
+| `first()`                                         | `DataModel\|null`      | First matching record                          |
+| `find(mixed $id)`                                 | `DataModel\|null`      | Find by primary key                            |
+| `fetch(string $key, mixed $value)`                | `DataModel\|null`      | Find first where key equals value              |
+| `firstOrCreate(array $attributes, array $values)` | `DataModel`            | Find matching or create with merged attributes |
+| `count()`                                         | `int`                  | Count matching records                         |
+| `exists()`                                        | `bool`                 | Any matches?                                   |
+| `pluck(string $value, ?string $key)`              | `Collection`           | Pluck field values                             |
+| `toArray()`                                       | `array`                | Raw array output (auto-IDs stripped)           |
+| `paginate(int $perPage)`                          | `LengthAwarePaginator` | Paginated results                              |
+| `update(array $attributes)`                       | `int`                  | Bulk update matching rows, returns count       |
+| `delete()`                                        | `int`                  | Bulk delete matching rows, returns count       |
 
 ```php
 // Fetch - shorthand for where()->first()

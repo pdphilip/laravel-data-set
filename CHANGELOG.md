@@ -2,6 +2,16 @@
 
 All notable changes to `Laravel Data Set` will be documented in this file.
 
+## v1.2.0 - 2026-04-04
+
+### Laravel 13 support
+
+- Added Laravel 13 support
+- Dropped Laravel 10 support
+- Updated dev dependencies: Pest ^3/^4, PHPStan Extension Installer ^1.4/^2.0, Orchestra Testbench ^9/^10/^11
+
+**Full Changelog**: https://github.com/pdphilip/laravel-data-set/compare/v1.1.0...v1.2.0
+
 ## v1.1.0 - 2026-03-03
 
 ### Query Builder extraction + scaffolding command
